@@ -54,6 +54,7 @@ void InfoResponder::replyJson(StreamExtension& se)
   }
 
   struct SerPluginList pl;
+  pl.Version = StringExtension::UTF8Decode(VDRVERSION);
 
   cPlugin* p = NULL;
   int counter = 0;
@@ -85,7 +86,7 @@ void InfoResponder::replyJson(StreamExtension& se)
         int duration = -1;
         int eventId = -1;
 
-        if ( event != NULL) {
+        if (event != NULL) {
            eventTitle = event->Title();
            start_time = event->StartTime();
            duration = event->Duration(),
@@ -107,6 +108,8 @@ void InfoResponder::replyJson(StreamExtension& se)
   serializer.serialize(ds, "diskusage");
 
 
+  serializer.serialize(StringExtension::UTF8Decode(VdrExtension::getVideoDiskSpace()), "diskspace");
+  
   serializer.serialize(pl, "vdr");
   serializer.finish();  
 }
@@ -115,7 +118,6 @@ void InfoResponder::replyXml(StreamExtension& se)
 {
   time_t now = time(0);
   StatusMonitor* statm = StatusMonitor::get();
-
 
   se.writeXmlHeader();
   se.write("<info xmlns=\"http://www.domain.org/restfulapi/2011/info-xml\">\n");
@@ -131,7 +133,6 @@ void InfoResponder::replyXml(StreamExtension& se)
               restful_services[i]->Internal() ? "true" : "false"));
   }
   se.write(" </services>\n");
-
   
   if ( statm->getRecordingName().length() > 0 || statm->getRecordingFile().length() > 0 ) {
      se.write(cString::sprintf(" <video name=\"%s\">%s</video>\n", StringExtension::encodeToXml(statm->getRecordingName()).c_str(), StringExtension::encodeToXml(statm->getRecordingFile()).c_str()));
@@ -169,6 +170,7 @@ void InfoResponder::replyXml(StreamExtension& se)
   se.write(" </diskusage>\n");
 
   se.write(" <vdr>\n");
+  se.write(cString::sprintf("  <version>%s</version>\n", VDRVERSION));
   se.write("  <plugins>\n");
  
   cPlugin* p = NULL; 
@@ -199,6 +201,7 @@ void operator<<= (cxxtools::SerializationInfo& si, const SerPlugin& p)
 void operator<<= (cxxtools::SerializationInfo& si, const SerPluginList& pl)
 {
   si.addMember("plugins") <<= pl.plugins;
+  si.addMember("version") <<= pl.Version;
 }
 
 void operator<<= (cxxtools::SerializationInfo& si, const SerPlayerInfo& pi)
