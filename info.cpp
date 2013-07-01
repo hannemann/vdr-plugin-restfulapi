@@ -22,7 +22,7 @@ void InfoResponder::reply(ostream& out, cxxtools::http::Request& request, cxxtoo
   } else if (q.isFormat(".html")) { 
     reply.addHeader("Content-Type", "text/html; charset=utf-8");
     replyHtml(se);
-  }else {
+  } else {
     reply.httpReturn(403, "Support formats: xml, json and html!");
   }
 }
@@ -67,7 +67,7 @@ void InfoResponder::replyJson(StreamExtension& se)
   }
 
   serializer.serialize(services, "services");
-
+	 
   if ( statm->getRecordingName().length() > 0 || statm->getRecordingFile().length() > 0 ) {
      SerPlayerInfo pi;
      pi.Name = StringExtension::UTF8Decode(statm->getRecordingName());
@@ -75,10 +75,15 @@ void InfoResponder::replyJson(StreamExtension& se)
      serializer.serialize(pi, "video");
   } else {
      string channelid = "";
-     cChannel* channel = Channels.GetByNumber(statm->getChannel());
+     string channelname = "";
+     int channelnumber = statm->getChannel();
+     cChannel* channel = Channels.GetByNumber(channelnumber);
      if (channel != NULL) { 
         channelid = (const char*)channel->GetChannelID().ToString();
         serializer.serialize(channelid, "channel");
+        channelname = channel->Name();
+        serializer.serialize(channelname, "channel_name");
+        serializer.serialize(channelnumber, "channel_number");
         cEvent* event = VdrExtension::getCurrentEventOnChannel(channel);
                 
         string eventTitle = "";
@@ -89,8 +94,8 @@ void InfoResponder::replyJson(StreamExtension& se)
         if (event != NULL) {
            eventTitle = event->Title();
            start_time = event->StartTime();
-           duration = event->Duration(),
-           eventId = (int)event->EventID();	   
+           duration = event->Duration();
+           eventId = (int)event->EventID();
         }
 
         serializer.serialize(eventId, "eventid");
@@ -99,6 +104,11 @@ void InfoResponder::replyJson(StreamExtension& se)
         serializer.serialize(StringExtension::UTF8Decode(eventTitle), "title");
      }
   }
+  
+  if (statm->isRecord())
+	 serializer.serialize("true", "recording");
+  else
+     serializer.serialize("false", "recording"); 
 
   SerDiskSpaceInfo ds;
   ds.Description = cVideoDiskUsage::String(); //description call goes first, it calls HasChanged
@@ -133,19 +143,24 @@ void InfoResponder::replyXml(StreamExtension& se)
               restful_services[i]->Internal() ? "true" : "false"));
   }
   se.write(" </services>\n");
-  
+
   if ( statm->getRecordingName().length() > 0 || statm->getRecordingFile().length() > 0 ) {
      se.write(cString::sprintf(" <video name=\"%s\">%s</video>\n", StringExtension::encodeToXml(statm->getRecordingName()).c_str(), StringExtension::encodeToXml(statm->getRecordingFile()).c_str()));
   } else {
-     cChannel* channel = Channels.GetByNumber(statm->getChannel());
      string channelid = "";
+     string channelname = "";  
+     int channelnumber = statm->getChannel();  
+     cChannel* channel = Channels.GetByNumber(channelnumber);
      cEvent* event = NULL;
      if (channel != NULL) { 
         channelid = (const char*)channel->GetChannelID().ToString();
+        channelname = channel->Name();
         event = VdrExtension::getCurrentEventOnChannel(channel);  
      }
 
      se.write(cString::sprintf(" <channel>%s</channel>\n", channelid.c_str()));
+     se.write(cString::sprintf(" <channel_name>%s</channel_name>\n", channelname.c_str()));
+     se.write(cString::sprintf(" <channel_number>%d</channel_number>\n", channelnumber));
      if ( event != NULL) {
         string eventTitle = "";
         if ( event->Title() != NULL ) { eventTitle = event->Title(); }
@@ -156,6 +171,12 @@ void InfoResponder::replyXml(StreamExtension& se)
         se.write(cString::sprintf(" <title>%s</title>\n", StringExtension::encodeToXml(eventTitle).c_str()));
      }
   }
+  
+  if (statm->isRecord())
+     se.write(cString::sprintf(" <recording>true</recording>\n"));
+  else
+     se.write(cString::sprintf(" <recording>false</recording>\n")); 
+  
   SerDiskSpaceInfo ds;
   ds.Description = cVideoDiskUsage::String(); //description call goes first, it calls HasChanged
   ds.UsedPercent = cVideoDiskUsage::UsedPercent();
