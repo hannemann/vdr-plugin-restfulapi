@@ -131,7 +131,7 @@ void InfoResponder::replyXml(StreamExtension& se)
 
   se.writeXmlHeader();
   se.write("<info xmlns=\"http://www.domain.org/restfulapi/2011/info-xml\">\n");
-  se.write(" <version>0.0.1</version>\n");
+  se.write(" <version>0.1.3</version>\n");
   se.write(cString::sprintf(" <time>%i</time>\n", (int)now)); 
   se.write(" <services>\n");
   
@@ -182,6 +182,7 @@ void InfoResponder::replyXml(StreamExtension& se)
   ds.UsedPercent = cVideoDiskUsage::UsedPercent();
   ds.FreeMB      = cVideoDiskUsage::FreeMB();
   ds.FreeMinutes = cVideoDiskUsage::FreeMinutes();
+  se.write(cString::sprintf(" <diskspace>%s</diskspace>\n", StringExtension::encodeToXml(VdrExtension::getVideoDiskSpace()).c_str())); 
 
   se.write(" <diskusage>\n");
   se.write(cString::sprintf("  <free_mb>%i</free_mb>\n", ds.FreeMB));
@@ -221,8 +222,8 @@ void operator<<= (cxxtools::SerializationInfo& si, const SerPlugin& p)
 
 void operator<<= (cxxtools::SerializationInfo& si, const SerPluginList& pl)
 {
-  si.addMember("plugins") <<= pl.plugins;
   si.addMember("version") <<= pl.Version;
+  si.addMember("plugins") <<= pl.plugins;
 }
 
 void operator<<= (cxxtools::SerializationInfo& si, const SerPlayerInfo& pi)
