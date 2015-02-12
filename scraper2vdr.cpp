@@ -165,8 +165,19 @@ bool Scraper2VdrService::getMedia(cRecording* recording, StreamExtension* s) {
  */
 string Scraper2VdrService::cleanImagePath(string path) {
 
+  esyslog("restfulapi: cleanImagePath path to clean %s", path.c_str());
+
+  esyslog("restfulapi: cleanImagePath path to replace %s", epgImagesDir.c_str());
+
   path = StringExtension::replace(path, epgImagesDir, "");
-  path.erase(0, path.find_first_not_of("/"));
+
+  esyslog("restfulapi: cleanImagePath path with epgimagesdir replaced %s", path.c_str());
+
+  path.erase((size_t)0, (size_t)path.find_first_not_of("/"));
+
+  esyslog("restfulapi: cleanImagePath result with leading slashes trimmed %s", path.c_str());
+
+  esyslog("restfulapi: cleanImagePath ==================================================================");
   return path;
 };
 
